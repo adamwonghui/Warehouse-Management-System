@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库管理系统 - 用户端</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .header .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            border-radius: 6px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-bar button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .item-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .item-card:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .item-card h3 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .item-card .item-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .item-card .status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .status.in_stock {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .status.partial_in_stock {
+            background: #fffbe6;
+            color: #faad14;
+        }
+        
+        .status.out_of_stock {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+        
+        .item-card .apply-btn {
+            width: 100%;
+            padding: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        
+        .item-card .apply-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .item-card .apply-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .cancel-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .confirm-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .page-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+        
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .page-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>仓库管理系统 - 用户端</h1>
+        <button class="logout-btn" onclick="window.location.href='index.html'">退出登录</button>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('items')">物品浏览</button>
+            <button class="tab-btn" onclick="switchTab('requests')">我的申请</button>
+        </div>
+        
+        <div id="items" class="tab-content active">
+            <div class="search-bar">
+                <input type="text" id="item-search" placeholder="搜索物品名称或类别...">
+                <button onclick="searchItems()">搜索</button>
+            </div>
+            <div id="items-container" class="items-grid">
+                <!-- 物品卡片将在这里动态生成 -->
+            </div>
+            <div class="pagination" id="items-pagination">
+                <!-- 分页按钮将在这里动态生成 -->
+            </div>
+        </div>
+        
+        <div id="requests" class="tab-content">
+            <div class="table-container">
+                <table id="requests-table">
+                    <thead>
+                        <tr>
+                            <th>物品名称</th>
+                            <th>数量</th>
+                            <th>用途</th>
+                            <th>状态</th>
+                            <th>申请时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 请求记录将在这里动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="requests-empty" class="empty-state" style="display: none;">
+                <p>暂无申请记录</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 申请模态框 -->
+    <div id="apply-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>申请物品</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="apply-form">
+                <input type="hidden" id="apply-item-id">
+                <div class="form-group">
+                    <label for="apply-item-name">物品名称</label>
+                    <input type="text" id="apply-item-name" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="apply-quantity">申请数量</label>
+                    <input type="number" id="apply-quantity" min="1" max="100" required>
+                </div>
+                <div class="form-group">
+                    <label for="apply-purpose">申请用途</label>
+                    <textarea id="apply-purpose" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
+                    <button type="submit" class="confirm-btn">提交申请</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 归还模态框 -->
+    <div id="return-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>归还物品</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="return-form">
+                <input type="hidden" id="return-request-id">
+                <div class="form-group">
+                    <label for="return-item-name">物品名称</label>
+                    <input type="text" id="return-item-name" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="return-quantity">归还数量</label>
+                    <input type="number" id="return-quantity" min="1" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
+                    <button type="submit" class="confirm-btn">确认归还</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // 当前页码和每页条数
+        let currentPage = 1;
+        const pageSize = 12;
+        
+        // 页面加载时初始化
+        window.onload = () => {
+            loadItems();
+            loadUserRequests();
+        };
+        
+        // 切换标签
+        function switchTab(tabId) {
+            // 隐藏所有内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有按钮的活跃状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的内容和按钮
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+        
+        // 加载物品列表
+        async function loadItems() {
+            try {
+                const response = await axios.get('http://localhost:5001/api/items');
+                if (response.data.code === 200) {
+                    renderItems(response.data.data);
+                }
+            } catch (error) {
+                console.error('加载物品失败:', error);
+            }
+        }
+        
+        // 搜索物品
+        async function searchItems() {
+            const keyword = document.getElementById('item-search').value.trim();
+            currentPage = 1;
+            
+            try {
+                let url = 'http://localhost:5001/api/items';
+                if (keyword) {
+                    url += `?keyword=${encodeURIComponent(keyword)}`;
+                }
+                
+                const response = await axios.get(url);
+                if (response.data.code === 200) {
+                    renderItems(response.data.data);
+                }
+            } catch (error) {
+                console.error('搜索物品失败:', error);
+            }
+        }
+        
+        // 渲染物品列表
+        function renderItems(items) {
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+            
+            // 分页处理
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedItems = items.slice(startIndex, endIndex);
+            
+            if (paginatedItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>暂无物品</p>
+                    </div>
+                `;
+                document.getElementById('items-pagination').innerHTML = '';
+                return;
+            }
+            
+            paginatedItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                
+                const statusClass = item.status;
+                const statusText = statusClass === 'in_stock' ? '有库存' : 
+                                  statusClass === 'partial_in_stock' ? '部分库存' : '无库存';
+                
+                card.innerHTML = `
+                    <h3>${item.name}</h3>
+                    <div class="item-info">
+                        <p>类别: ${item.category}</p>
+                        <p>当前库存: ${item.in_stock}</p>
+                        <p>描述: ${item.description || '暂无描述'}</p>
+                    </div>
+                    <span class="status ${statusClass}">${statusText}</span>
+                    <button class="apply-btn" onclick="openApplyModal(${item.id}, '${item.name}', ${item.in_stock})" 
+                            ${item.in_stock === 0 ? 'disabled' : ''}>
+                        申请使用
+                    </button>
+                `;
+                
+                container.appendChild(card);
+            });
+            
+            // 生成分页
+            renderPagination(items.length);
+        }
+        
+        // 渲染分页
+        function renderPagination(totalItems) {
+            const pagination = document.getElementById('items-pagination');
+            pagination.innerHTML = '';
+            
+            const totalPages = Math.ceil(totalItems / pageSize);
+            
+            // 上一页
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.textContent = '上一页';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadItems();
+                }
+            };
+            pagination.appendChild(prevBtn);
+            
+            // 页码按钮
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    loadItems();
+                };
+                pagination.appendChild(pageBtn);
+            }
+            
+            // 下一页
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.textContent = '下一页';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    loadItems();
+                }
+            };
+            pagination.appendChild(nextBtn);
+        }
+        
+        // 加载用户请求
+        async function loadUserRequests() {
+            try {
+                const response = await axios.get('http://localhost:5001/api/requests?username=user');
+                if (response.data.code === 200) {
+                    renderRequests(response.data.data);
+                }
+            } catch (error) {
+                console.error('加载请求失败:', error);
+            }
+        }
+        
+        // 渲染请求列表
+        function renderRequests(requests) {
+            const tbody = document.getElementById('requests-table').querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            if (requests.length === 0) {
+                document.getElementById('requests-empty').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('requests-empty').style.display = 'none';
+            
+            requests.forEach(req => {
+                const row = document.createElement('tr');
+                
+                let statusText = '';
+                let statusColor = '';
+                let actionBtn = '';
+                
+                switch (req.status) {
+                    case 'pending':
+                        statusText = '待审批';
+                        statusColor = '#faad14';
+                        break;
+                    case 'approved':
+                        statusText = '已批准';
+                        statusColor = '#52c41a';
+                        actionBtn = `<button onclick="openReturnModal(${req.id}, '${req.item_name}', ${req.quantity})">归还</button>`;
+                        break;
+                    case 'rejected':
+                        statusText = '已拒绝';
+                        statusColor = '#ff4d4f';
+                        break;
+                    case 'returned':
+                        statusText = '已归还';
+                        statusColor = '#1890ff';
+                        break;
+                    case 'partially_returned':
+                        statusText = '部分归还';
+                        statusColor = '#fa8c16';
+                        actionBtn = `<button onclick="openReturnModal(${req.id}, '${req.item_name}', ${req.quantity})">继续归还</button>`;
+                        break;
+                }
+                
+                row.innerHTML = `
+                    <td>${req.item_name}</td>
+                    <td>${req.quantity}</td>
+                    <td>${req.purpose}</td>
+                    <td style="color: ${statusColor}">${statusText}</td>
+                    <td>${new Date(req.created_at).toLocaleString()}</td>
+                    <td>${actionBtn}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 打开申请模态框
+        function openApplyModal(itemId, itemName, inStock) {
+            document.getElementById('apply-item-id').value = itemId;
+            document.getElementById('apply-item-name').value = itemName;
+            document.getElementById('apply-quantity').max = inStock;
+            document.getElementById('apply-quantity').value = 1;
+            document.getElementById('apply-purpose').value = '';
+            
+            document.getElementById('apply-modal').style.display = 'flex';
+        }
+        
+        // 打开归还模态框
+        function openReturnModal(requestId, itemName, maxQuantity) {
+            document.getElementById('return-request-id').value = requestId;
+            document.getElementById('return-item-name').value = itemName;
+            document.getElementById('return-quantity').max = maxQuantity;
+            document.getElementById('return-quantity').value = maxQuantity;
+            
+            document.getElementById('return-modal').style.display = 'flex';
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        // 提交申请
+        document.getElementById('apply-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const itemId = document.getElementById('apply-item-id').value;
+            const quantity = document.getElementById('apply-quantity').value;
+            const purpose = document.getElementById('apply-purpose').value;
+            
+            try {
+                const response = await axios.post('http://localhost:5001/api/requests', {
+                    username: 'user',
+                    item_id: itemId,
+                    quantity: parseInt(quantity),
+                    purpose
+                });
+                
+                if (response.data.code === 200) {
+                    alert('申请成功');
+                    closeModal();
+                    loadItems();
+                    loadUserRequests();
+                } else {
+                    alert(response.data.message || '申请失败');
+                }
+            } catch (error) {
+                console.error('提交申请失败:', error);
+                alert('申请失败，请稍后重试');
+            }
+        });
+        
+        // 提交归还
+        document.getElementById('return-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const requestId = document.getElementById('return-request-id').value;
+            const quantity = document.getElementById('return-quantity').value;
+            
+            try {
+                const response = await axios.put(`http://localhost:5001/api/requests/${requestId}/return`, {
+                    quantity: parseInt(quantity)
+                });
+                
+                if (response.data.code === 200) {
+                    alert('归还成功');
+                    closeModal();
+                    loadItems();
+                    loadUserRequests();
+                } else {
+                    alert(response.data.message || '归还失败');
+                }
+            } catch (error) {
+                console.error('提交归还失败:', error);
+                alert('归还失败，请稍后重试');
+            }
+        });
+        
+        // 点击模态框外部关闭
+        window.onclick = (event) => {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        };
+    </script>
+</body>
+</html>
