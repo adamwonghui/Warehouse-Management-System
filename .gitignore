@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+env\/
+venv\/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask
+instance/
+.webassets-cache
+*.flaskenv
+*.env
+
+# SQLite
+*.sqlite
+*.db
+*.db-journal
+
+# Logs
+*.log
+logs/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.pytest_cache/
+
+# Production
+build/
+dist/
+
+# Misc
+*.pem
+.cache/
+.python-version
